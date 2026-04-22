@@ -1,0 +1,10 @@
+name: OneGuard
+description: $description
+version: '${version}'
+
+main: com.kobosh.oneGuard.OneGuard
+api-version: '1.21.10'
+load: POSTWORLD
+
+authors: [ koboshchan ]
+website: kobosh.com
