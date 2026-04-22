@@ -8,3 +8,9 @@ load: POSTWORLD
 
 authors: [ koboshchan ]
 website: kobosh.com
+
+permissions:
+  oneguard.reload:
+    description: Allows reloading OneGuard config
+    default: op
+

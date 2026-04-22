@@ -1,0 +1,11 @@
+# Public key shown on startup and after /reload
+publicKey: "replace-with-your-public-key"
+
+signature:
+  algorithm: "Ed25519"
+  keyAlgorithm: "Ed25519"
+
+transferCookie:
+  namespace: "onemcserver"
+  key: "auth"
+
