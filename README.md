@@ -1,5 +1,11 @@
 # OneGuard
 
+## Deprecated
+
+This project is deprecated.
+
+Use Velocity built-in modern forwarding/auth instead.
+
 OneGuard is a Paper plugin for 1.21.10.
 
 ## What It Does
