@@ -64,9 +64,26 @@ public final class TransferJoinListener implements Listener {
             return;
         }
 
-        if (!json.has("uuid")) {
-            plugin.getLogger().warning("Cookie payload missing 'uuid' field for " + player.getName());
-            player.kickPlayer("Connection denied: transfer payload missing UUID.");
+        if (!json.has("uuid") || !json.has("username") || !json.has("cracked") || !json.has("time")) {
+            plugin.getLogger().warning("Cookie payload missing required fields for " + player.getName());
+            player.kickPlayer("Connection denied: transfer payload malformed.");
+            return;
+        }
+
+        long cookieTime = json.get("time").getAsLong();
+        long now = System.currentTimeMillis() / 1000L;
+        if (Math.abs(now - cookieTime) > 10) {
+            plugin.getLogger().warning("Cookie expired for " + player.getName()
+                    + " (cookie time: " + cookieTime + ", server time: " + now + ")");
+            player.kickPlayer("Connection denied: transfer cookie expired.");
+            return;
+        }
+
+        String cookieUsername = json.get("username").getAsString();
+        if (!player.getName().equalsIgnoreCase(cookieUsername)) {
+            plugin.getLogger().warning("Username mismatch for " + player.getName()
+                    + ": cookie username was '" + cookieUsername + "'");
+            player.kickPlayer("Connection denied: username mismatch.");
             return;
         }
 
@@ -79,14 +96,17 @@ public final class TransferJoinListener implements Listener {
             return;
         }
 
-        if (!player.getUniqueId().equals(cookieUuid)) {
+        boolean cracked = json.get("cracked").getAsBoolean();
+
+        if (!cracked && !player.getUniqueId().equals(cookieUuid)) {
             plugin.getLogger().info("Reassigning UUID for " + player.getName()
-                    + " from " + player.getUniqueId() + " to " + cookieUuid);
+                    + " from " + player.getUniqueId() + " (offline) to " + cookieUuid + " (premium)");
             PlayerProfile profile = Bukkit.createProfile(cookieUuid, player.getName());
             player.setPlayerProfile(profile);
         }
 
-        plugin.getLogger().info("Transfer accepted for " + player.getName() + " (UUID: " + cookieUuid + ")");
+        plugin.getLogger().info("Transfer accepted for " + player.getName()
+                + " (UUID: " + cookieUuid + ", cracked: " + cracked + ")");
     }
 }
 
