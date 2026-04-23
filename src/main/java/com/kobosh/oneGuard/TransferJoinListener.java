@@ -1,8 +1,13 @@
 package com.kobosh.oneGuard;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -36,8 +41,7 @@ public final class TransferJoinListener implements Listener {
             String cookie = new String(data, StandardCharsets.UTF_8);
             try {
                 String payload = plugin.verifyTransferCookie(cookie);
-                plugin.getLogger().info("Transfer accepted for " + player.getName() + " with verified payload: " + payload);
-                player.sendMessage("Transfer verified.");
+                applyUuidFromPayload(player, payload);
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 plugin.getLogger().warning("Invalid transfer cookie for " + player.getName() + ": " + exception.getMessage());
                 player.kickPlayer("Connection denied: transfer signature invalid.");
@@ -48,6 +52,41 @@ public final class TransferJoinListener implements Listener {
             plugin.getLogger().warning("Failed to read transfer cookie for " + player.getName() + ": " + ex.getMessage());
             return null;
         });
+    }
+
+    private void applyUuidFromPayload(Player player, String payload) {
+        JsonObject json;
+        try {
+            json = JsonParser.parseString(payload).getAsJsonObject();
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not parse cookie payload JSON for " + player.getName() + ": " + e.getMessage());
+            player.kickPlayer("Connection denied: transfer payload malformed.");
+            return;
+        }
+
+        if (!json.has("uuid")) {
+            plugin.getLogger().warning("Cookie payload missing 'uuid' field for " + player.getName());
+            player.kickPlayer("Connection denied: transfer payload missing UUID.");
+            return;
+        }
+
+        UUID cookieUuid;
+        try {
+            cookieUuid = UUID.fromString(json.get("uuid").getAsString());
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Cookie payload contains invalid UUID for " + player.getName() + ": " + e.getMessage());
+            player.kickPlayer("Connection denied: transfer payload UUID invalid.");
+            return;
+        }
+
+        if (!player.getUniqueId().equals(cookieUuid)) {
+            plugin.getLogger().info("Reassigning UUID for " + player.getName()
+                    + " from " + player.getUniqueId() + " to " + cookieUuid);
+            PlayerProfile profile = Bukkit.createProfile(cookieUuid, player.getName());
+            player.setPlayerProfile(profile);
+        }
+
+        plugin.getLogger().info("Transfer accepted for " + player.getName() + " (UUID: " + cookieUuid + ")");
     }
 }
 
